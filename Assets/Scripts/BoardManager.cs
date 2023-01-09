@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 public class BoardManager : MonoBehaviour
@@ -34,7 +35,7 @@ public class BoardManager : MonoBehaviour
     void Start()
     {
         Instance = this;
-        SpawnAllChessmans();
+        SpawnAllChessmans960();
         EnPassantMove = new int[2] { -1, -1 };
     }
 
@@ -131,7 +132,7 @@ public class BoardManager : MonoBehaviour
             EnPassantMove[1] = -1;
             if (selectedChessman.GetType() == typeof(Pawn))
             {
-                if(y == 7) // White Promotion
+                if (y == 7) // White Promotion
                 {
                     activeChessman.Remove(selectedChessman.gameObject);
                     Destroy(selectedChessman.gameObject);
@@ -270,6 +271,197 @@ public class BoardManager : MonoBehaviour
         }
     }
 
+    private void SpawnAllChessmans960()
+    {
+        activeChessman = new List<GameObject>();
+        Chessmans = new Chessman[8, 8];
+
+        /////// White ///////
+
+        ValidateWhitePiece();
+
+        for (int i = 0; i < 8; i++)
+        {
+            SpawnChessman(5, i, 1, true);
+        }
+
+        
+        /////// Black ///////
+
+
+
+        // Pawns
+        for (int i = 0; i < 8; i++)
+        {
+            SpawnChessman(11, i, 6, false);
+        }
+    }
+
+    private void ValidateWhitePiece()
+    {
+        //all pieces & places
+        List<int> allPlaces = new List<int> { 0, 1, 2, 3, 4, 5, 6, 7 };
+        List<int> allWhitePieces = new List<int>() { 2, 0, 2, 3, 3, 4, 4, 1 };
+
+        //int for the placement 0-7
+        List<int> validPlaces = new List<int>();
+        validPlaces.AddRange(allPlaces);
+
+        List<int> validPieces = new List<int>();
+        validPieces.AddRange(allWhitePieces);
+
+        int currentPlaceNum = -1;
+
+        bool bishopOnWhite = false;
+        int kingLocation = -1;
+        int rookLocation = -1;
+
+        foreach (var piece in validPieces)
+        {
+            do
+            {
+                int i = UnityEngine.Random.Range(0, 8);
+                currentPlaceNum = i;
+            } while (!validPlaces.Contains(currentPlaceNum));
+            //Bishop
+            if (piece == 3)
+            {
+                ValidateBishop(allWhitePieces, validPlaces, ref currentPlaceNum, ref bishopOnWhite);
+            }
+            //King
+            else if (piece == 0)
+            {
+                do
+                {
+                    int i = UnityEngine.Random.Range(1, 7);
+                    currentPlaceNum = i;
+                } while (!validPlaces.Contains(currentPlaceNum));
+                kingLocation = currentPlaceNum;
+            }
+            //Rook
+            else if (piece == 2)
+            {
+                ValidateRook(validPlaces, ref currentPlaceNum, kingLocation, ref rookLocation);
+            }
+
+            SpawnChessman(piece, currentPlaceNum, 0, true);
+            validPlaces.Remove(currentPlaceNum);
+            allWhitePieces.Remove(piece);
+        }
+    }private void ValidateBlackPiece()
+    {
+        //all pieces & places
+        List<int> allPlaces = new List<int> { 0, 1, 2, 3, 4, 5, 6, 7 };
+        List<int> allWhitePieces = new List<int>() { 2, 0, 2, 3, 3, 4, 4, 1 };
+
+        //int for the placement 0-7
+        List<int> validPlaces = new List<int>();
+        validPlaces.AddRange(allPlaces);
+
+        List<int> validPieces = new List<int>();
+        validPieces.AddRange(allWhitePieces);
+
+        int currentPlaceNum = -1;
+
+        bool bishopOnWhite = false;
+        int kingLocation = -1;
+        int rookLocation = -1;
+
+        foreach (var piece in validPieces)
+        {
+            do
+            {
+                int i = UnityEngine.Random.Range(0, 8);
+                currentPlaceNum = i;
+            } while (!validPlaces.Contains(currentPlaceNum));
+            //Bishop
+            if (piece == 3)
+            {
+                ValidateBishop(allWhitePieces, validPlaces, ref currentPlaceNum, ref bishopOnWhite);
+            }
+            //King
+            else if (piece == 0)
+            {
+                do
+                {
+                    int i = UnityEngine.Random.Range(1, 7);
+                    currentPlaceNum = i;
+                } while (!validPlaces.Contains(currentPlaceNum));
+                kingLocation = currentPlaceNum;
+            }
+            //Rook
+            else if (piece == 2)
+            {
+                ValidateRook(validPlaces, ref currentPlaceNum, kingLocation, ref rookLocation);
+            }
+
+            SpawnChessman(piece, currentPlaceNum, 0, true);
+            validPlaces.Remove(currentPlaceNum);
+            allWhitePieces.Remove(piece);
+        }
+    }
+
+    private static void ValidateRook(List<int> validPlaces, ref int currentPlaceNum, int kingLocation, ref int rookLocation)
+    {
+        if (rookLocation == -1)
+        {
+            rookLocation = currentPlaceNum;
+        }
+        else
+        {
+            if (rookLocation < kingLocation)
+            {
+                //2nd needs to be more
+                do
+                {
+                    int i = UnityEngine.Random.Range(0, 8);
+                    currentPlaceNum = i;
+                } while (currentPlaceNum < kingLocation || !validPlaces.Contains(currentPlaceNum));
+            }
+            else
+            {
+                do
+                {
+                    int i = UnityEngine.Random.Range(0, 8);
+                    currentPlaceNum = i;
+                } while (currentPlaceNum > kingLocation || !validPlaces.Contains(currentPlaceNum));
+            }
+        }
+    }
+
+    private static void ValidateBishop(List<int> validPieces, List<int> validPlaces, ref int currentPlaceNum, ref bool bishopOnWhite)
+    {
+        bool tileColorIsCorrect = false;
+        bool tileIsEmpty = false;
+
+        while (!tileColorIsCorrect || !tileIsEmpty)
+        {
+            //get a tile to validate
+            int i = UnityEngine.Random.Range(0, 8);
+            currentPlaceNum = i;
+
+            //validate tilecoloriscorrect
+            if (validPieces.Count > 4)
+            {
+                tileColorIsCorrect = true;
+            }
+            else
+            {
+                if (bishopOnWhite)
+                {
+                    tileColorIsCorrect = currentPlaceNum % 2 == 0;
+                }
+                else
+                {
+                    tileColorIsCorrect = currentPlaceNum % 2 != 0;
+                }
+            }
+            //validate tileisempty
+            tileIsEmpty = validPlaces.Contains(currentPlaceNum);
+        }
+        bishopOnWhite = currentPlaceNum % 2 != 0;
+    }
+
     private void EndGame()
     {
         if (isWhiteTurn)
@@ -284,7 +476,7 @@ public class BoardManager : MonoBehaviour
 
         isWhiteTurn = true;
         BoardHighlights.Instance.HideHighlights();
-        SpawnAllChessmans();
+        SpawnAllChessmans960();
     }
 }
 
